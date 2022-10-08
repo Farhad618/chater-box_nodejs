@@ -2,7 +2,14 @@ import promptSync from 'prompt-sync';
 const prompt = promptSync();
 import validator from 'validator';
 import clear from 'console-clear';
+import { colours } from 'cons-colours'
 import { user, client, tokens, chats } from "./connection.js"
+
+const maker = new colours({
+	type: "fg" //background/bg, font/fg 
+});
+
+
 // import CreateUser from "./CreateUser.js"
 // import LoginUser from "./LoginUser.js"
 
@@ -14,49 +21,50 @@ import { user, client, tokens, chats } from "./connection.js"
 
 function dealKoken(){
 	while(true){
-		let koken = prompt("koken: ", {echo: '*'});
+		let koken = prompt(maker.bright(maker.green("koken: ")) + maker.reset(), {echo: '*'});
 		if (validator.isLength(koken, {min:3, max: 10})) {
 			return koken;
 		} else {
-			console.log("invalid koken.");
+			console.log(maker.red("invalid koken.") + maker.reset());
 		}
 	}
 }
 
 function dealToken(){
 	while(true){
-		let token = prompt("token: ", {echo: '*'});
+		let token = prompt(maker.bright(maker.green("token: ")) + maker.reset(), {echo: '*'});
 		if (validator.isLength(token, {min:3, max: 10})) {
 			return token;
 		} else {
-			console.log("invalid koken.");
+			console.log(maker.red("invalid token.") + maker.reset());
 		}
 	}
 }
 function dealUser(){
 	while(true){
-		let name = prompt("user: ");
+		let name = prompt(maker.bright(maker.green("user: ")) + maker.reset());
 		name = name.trim();
 		if (validator.isLength(name, {min:3, max: 10})) {
 			return name;
 		} else {
-			console.log("invalid username.");
+			console.log(maker.red("invalid username.") + maker.reset());
 		}
 	}
 }
 function dealPassword(){
 	while(true){
-		let pass = prompt("pass: ", {echo: '*'});
+		// let pass = prompt("pass: ", {echo: '*'});
+		let pass = prompt(maker.bright(maker.green("pass: ")) + maker.reset(), {echo: '*'});
 		if (validator.isLength(pass, {min:3, max: 10})) {
 			return pass;
 		} else {
-			console.log("invalid password.");
+			console.log(maker.red("invalid password.") + maker.reset());
 		}
 	}
 }
 
 async function chatNow(uname, ukoken){
-	let chatContent = prompt('/> ');
+	let chatContent = prompt(maker.bright(maker.cyan('/> ')) + maker.reset());
 	if (!validator.isEmpty(chatContent)) {
 		let chatQuery = { usr_id: uname, koken: ukoken, chat: chatContent };
 		await chats.insertOne(chatQuery);
@@ -67,33 +75,47 @@ async function chatNow(uname, ukoken){
 async function chatShow(ukoken){
 	let chatQuery = { koken: ukoken };
 
-	const cursor = chats.find(chatQuery);
+	const cursor = chats.find(chatQuery).sort({_id: -1}).limit(5);
+
+	// console.log(cursor)
 
 	if ((await cursor.countDocuments) === 0) {
-	  console.log("No documents found!");
+	  console.log(maker.red("No chats found!") + maker.reset());
 	}
 	await cursor.forEach(result => {
 		// console.log(result);
-		console.log(`[ ${result.usr_id} ]: ${result.chat}`);
+		// console.log(`[ ${result.usr_id} ]: ${result.chat}`);
+		console.log(`${maker.red('[')} ${maker.yellow(result.usr_id)} ${maker.red(']')}${maker.blue(':')} ${maker.green(result.chat)} ${maker.reset()}`);
 	});
 }
 
 async function afterLogin(uname, ukoken){
+	let choice = "V";
 	while(true){
-		let choice = prompt('> ');
 		switch(choice.toUpperCase()){
 			case "S": case "SEND":
 				await chatNow(uname, ukoken); break;
 			case "V": case "VIEW":
 				clear();
 				await chatShow(ukoken); break;
+
+			case "SV":
+				await chatNow(uname, ukoken);
+				clear();
+				await chatShow(ukoken); break;
+			case "VS":
+				clear();
+				await chatShow(ukoken);
+				await chatNow(uname, ukoken); break;
+
 			case "Q": case "QUIT":
-				console.log("quit.");
+				console.log(maker.red("quit.") + maker.reset());
 				await client.close();
 				return 0;
-			default: console.log("not a valid command.");
+			default: console.log(maker.red("not a valid command.") + maker.reset());
 				
 		}
+		choice = prompt(maker.bright(maker.magenta('> ')) + maker.reset());
 	}
 }
 
@@ -111,22 +133,23 @@ if (!loginFind) {
 	var Createquery = { usr_id: uname };
 	var createFind = await user.findOne(Createquery);
 	if (createFind) {
-		console.log("invalid credentials")
+		console.log(maker.red("invalid credentials.") + maker.reset())
 	} else {
 		utoken = dealToken();
 		let tokenquery = { token: utoken }
 		let tokenfind = await tokens.deleteOne(tokenquery);
 		if (tokenfind.deletedCount) {
 			await user.insertOne(userquery);
-			console.log("user created");
+			console.log(maker.bright(maker.green("user created.")) + maker.reset());
 			ukoken = dealKoken();
+			afterLogin(uname, ukoken);
 
 		} else {
-			console.log("invalid token");
+			console.log(maker.red("invalid token.") + maker.reset());
 		}
 	}
 } else {
-	console.log("user loggedin");
+	console.log(maker.bright(maker.green("user loggedin.")) + maker.reset());
 	ukoken = dealKoken();
 	// ukoken = "123456789";
 
