@@ -75,7 +75,7 @@ async function chatNow(uname, ukoken){
 async function chatShow(ukoken){
 	let chatQuery = { koken: ukoken };
 
-	const cursor = chats.find(chatQuery).sort({_id: -1}).limit(5);
+	const cursor = chats.find(chatQuery);
 
 	// console.log(cursor)
 
